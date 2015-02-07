@@ -31,7 +31,7 @@ void acceptConnections(int server_sock);
 int main(int argc, char** argv) {
 
 	/* Make sure the user called our program correctly. */
-	if (argc != 2) {
+	if (argc != 3) {
 		// TODO: print a proper error message informing user of proper usage
 		exit(1);
 	}
