@@ -76,10 +76,11 @@ int createSocketAndListen(int port_num) {
      * and setsockopt(2) pages for more details about socket options. */
     int reuse_true = 1;
 
-    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse_true,
+	int retval; // for checking return values
+
+    retval = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse_true,
                         sizeof(reuse_true));
 
-	int retval; // for checking return values
     if (retval < 0) {
         perror("Setting socket option failed");
         exit(1);
