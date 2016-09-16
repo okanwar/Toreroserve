@@ -1,13 +1,15 @@
-/*
+/**
  * ToreroServe: A Lean Web Server
- * COMP 494 (Sp15) Project 01
+ * COMP 375 (Fall 2016) Project 02
  *
  * This program should take two arguments:
  * 	1. The port number on which to bind and listen for connections
  * 	2. The directory out of which to serve files.
  *
- * Author:
- * Date:
+ * 	TODO: update author info with names and USD email addresses
+ *
+ * Author 1:
+ * Author 2:
  */
 
 #include <errno.h>
