@@ -1,6 +1,6 @@
 TARGETS=toreroserve thread_example
 
-CFLAGS=-Wall -g -O0 -pthread
+CFLAGS=-Wall -Wextra -Werror -g -O0 -pthread
 
 all: $(TARGETS)
 
