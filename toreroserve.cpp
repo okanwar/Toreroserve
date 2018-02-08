@@ -41,8 +41,8 @@ using std::thread;
 // This will limit how many clients can be waiting for a connection.
 const int BACKLOG = 10;
 
-int createSocketAndListen(int port_num);
-void acceptConnections(int server_sock);
+int createSocketAndListen(const int port_num);
+void acceptConnections(const int server_sock);
 
 int main(int argc, char** argv) {
 
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
  * @param port_num The port number on which to listen for connections.
  * @returns The socket file descriptor
  */
-int createSocketAndListen(int port_num) {
+int createSocketAndListen(const int port_num) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if(sock < 0) {
         perror("Creating socket failed");
@@ -152,7 +152,7 @@ int createSocketAndListen(int port_num) {
  *
  * @param server_sock The socket used by the server.
  */
-void acceptConnections(int server_sock) {
+void acceptConnections(const int server_sock) {
     while(1) {
         // Declare a socket for the client connection.
         int sock;
