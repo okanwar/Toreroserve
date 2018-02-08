@@ -12,12 +12,14 @@
  * Author 2:
  */
 
-#include <errno.h>
+// standard C libraries
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cerrno>
+
+// operating system specific libraries
 #include <netinet/in.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -25,7 +27,19 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-#define BACKLOG 10
+// C++ standard libraries
+#include <vector>
+#include <thread>
+#include <string>
+#include <iostream>
+
+using std::cout;
+using std::string;
+using std::vector;
+using std::thread;
+
+// This will limit how many clients can be waiting for a connection.
+const int BACKLOG = 10;
 
 int createSocketAndListen(int port_num);
 void acceptConnections(int server_sock);
@@ -35,11 +49,12 @@ int main(int argc, char** argv) {
 	/* Make sure the user called our program correctly. */
 	if (argc != 3) {
 		// TODO: print a proper error message informing user of proper usage
+		cout << "INCORRECT USAGE!\n";
 		exit(1);
 	}
 
     /* Read the port number from the first command line argument. */
-    int port = (int)strtol(argv[1], NULL, 10);
+    int port = std::stoi(argv[1]);
 
 	/* Create a socket and start listening for new connections on the
 	 * specified port. */
