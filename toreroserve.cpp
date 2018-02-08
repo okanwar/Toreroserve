@@ -33,6 +33,7 @@
 #include <string>
 #include <iostream>
 
+// These help us avoid having to add std:: in front of some common types/values
 using std::cout;
 using std::string;
 using std::vector;
@@ -77,7 +78,7 @@ int main(int argc, char** argv) {
  */
 int createSocketAndListen(const int port_num) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if(sock < 0) {
+    if (sock < 0) {
         perror("Creating socket failed");
         exit(1);
     }
@@ -126,7 +127,7 @@ int createSocketAndListen(const int port_num) {
      * address and port specified above.
 	 */
     retval = bind(sock, (struct sockaddr*)&addr, sizeof(addr));
-    if(retval < 0) {
+    if (retval < 0) {
         perror("Error binding to port");
         exit(1);
     }
@@ -139,7 +140,7 @@ int createSocketAndListen(const int port_num) {
      * accepted.
 	 */
     retval = listen(sock, BACKLOG);
-    if(retval < 0) {
+    if (retval < 0) {
         perror("Error listening for connections");
         exit(1);
     }
@@ -153,10 +154,7 @@ int createSocketAndListen(const int port_num) {
  * @param server_sock The socket used by the server.
  */
 void acceptConnections(const int server_sock) {
-    while(1) {
-        // Declare a socket for the client connection.
-        int sock;
-
+    while (true) {
         /* 
 		 * Another address structure.  This time, the system will automatically
          * fill it in, when we accept a connection, to tell us where the
@@ -172,8 +170,8 @@ void acceptConnections(const int server_sock) {
          * there are no pending connections in the back log, this function will
          * block indefinitely while waiting for a client connection to be made.
          */
-        sock = accept(server_sock, (struct sockaddr*) &remote_addr, &socklen);
-        if(sock < 0) {
+        int sock = accept(server_sock, (struct sockaddr*) &remote_addr, &socklen);
+        if (sock < 0) {
             perror("Error accepting connection");
             exit(1);
         }
