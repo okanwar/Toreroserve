@@ -1,6 +1,6 @@
 /**
  * ToreroServe: A Lean Web Server
- * COMP 375 (Fall 2016) Project 02
+ * COMP 375 (Spring 2018) Project 02
  *
  * This program should take two arguments:
  * 	1. The port number on which to bind and listen for connections
