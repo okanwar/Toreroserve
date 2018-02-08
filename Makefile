@@ -12,8 +12,8 @@ all: $(TARGETS)
 toreroserve: toreroserve.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-thread_example: thread_example.c
-	gcc $(CFLAGS) -o $@ $^
+thread_example: thread_example.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:
 	rm -f $(TARGETS)
