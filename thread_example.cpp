@@ -14,6 +14,11 @@ using std::string;
 using std::vector;
 using std::thread;
 
+// The following mutex is used to make sure two threads don't try to print at
+// the same time (causing weird, interleaved output).
+// Recall: static means this global is only available in this file/module
+static std::mutex print_mutex;
+
 /**
  * Function that the thread will run.
  *
@@ -21,10 +26,10 @@ using std::thread;
  * @param name A human friendly name for the thread.
  * @param m A mutex to avoid multiple threads interleaving their output.
  */
-void thread_function(int id, string name, std::mutex& m) {
-	m.lock();
+void thread_function(int id, string name) {
+	print_mutex.lock();
 	cout << "Hi, I'm thread number " << id << ", but I prefer to go by " << name << "\n";
-	m.unlock();
+	print_mutex.unlock();
 }
 
 int main(int argc, char **argv) {
@@ -38,10 +43,8 @@ int main(int argc, char **argv) {
     int num_threads = std::stoi(argv[1]);
 	vector<thread> threads;
 
-	std::mutex print_mutex;
-
     for (int i = 0; i < num_threads; i++) {
-		threads.push_back(thread(thread_function, i, names[i], std::ref(print_mutex)));
+		threads.push_back(thread(thread_function, i, names[i]));
     }
 
 	// Wait for each thread to finish using the join function.
