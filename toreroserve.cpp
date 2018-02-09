@@ -43,6 +43,7 @@ const int BACKLOG = 10;
 
 int createSocketAndListen(const int port_num);
 void acceptConnections(const int server_sock);
+void handleClient(const int client_sock);
 
 int main(int argc, char** argv) {
 
@@ -66,6 +67,60 @@ int main(int argc, char** argv) {
     close(server_sock);
 
 	return 0;
+}
+
+/**
+ * Sends message over given socket, raising an exception if there was a problem
+ * sending.
+ *
+ * @param socket_fd The socket to send data over.
+ * @param data The data to send.
+ * @param data_length Number of bytes of data to send.
+ */
+void sendData(int socked_fd, const char *data, size_t data_length) {
+	// TODO: Wrap the following code in a loop so that it keeps sending until
+	// the data has been completely sent.
+	
+	int num_bytes_sent = send(socked_fd, data, data_length, 0);
+	if (num_bytes_sent == -1) {
+		perror("send");
+		throw std::runtime_error("send failed");
+	}
+}
+
+/**
+ * Receives message over given socket, raising an exception if there was an
+ * error in receiving.
+ *
+ * @param socket_fd The socket to send data over.
+ * @param dest The buffer where we will store the received data.
+ * @param buff_size Number of bytes in the buffer.
+ * @return The number of bytes received and written to the destination buffer.
+ */
+int receiveData(int socked_fd, char *dest, size_t buff_size) {
+	int num_bytes_received = recv(socked_fd, dest, buff_size, 0);
+	if (num_bytes_received == -1) {
+		perror("recv");
+		throw std::runtime_error("recv failed");
+	}
+
+	return num_bytes_received;
+}
+
+/**
+ * Receives a request from a connected HTTP client and sends back the
+ * appropriate response.
+ *
+ * @param client_sock The client's socket file descriptor.
+ */
+void handleClient(const int client_sock) {
+	// TODO: Receive the request from the client. You can use receiveData here.
+	
+	// TODO: Parse the request to determine what response to generate.
+	
+	// TODO: Generate appropriate response.
+	
+	// TODO: Send response to client.
 }
 
 /*
@@ -180,10 +235,15 @@ void acceptConnections(const int server_sock) {
 
         /* 
 		 * At this point, you have a connected socket (named sock) that you can
-         * use to send() and recv().
-		 * TODO: You should send this socket to a separate thread to handle
-		 * rather than doing any sends or recvs here.
+         * use to send() and recv(). The handleClient function should handle all
+		 * of the sending and receiving to/from the client.
+		 *
+		 * TODO: You shouldn't call handleClient directly here. Instead it
+		 * should be called from a separate thread. You'll just need to put sock
+		 * in a shared buffer and notify the threads (via a condition variable)
+		 * that there is a new item on this buffer.
 		 */
+		handleClient(sock);
 
         /* 
 		 * ALWAYS check the return value of send().  Also, don't hardcode
