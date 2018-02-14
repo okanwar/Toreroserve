@@ -33,6 +33,13 @@
 #include <string>
 #include <iostream>
 
+// Un-comment the following lines if you plan on using Boost's Filesystem Library.
+/*
+#include <boost/filesystem.hpp>
+
+namespace fs = boost::filesystem;
+*/
+
 using std::cout;
 using std::string;
 using std::vector;
