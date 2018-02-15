@@ -254,14 +254,6 @@ void acceptConnections(const int server_sock) {
 		handleClient(sock);
 
         /* 
-		 * ALWAYS check the return value of send().  Also, don't hardcode
-         * values.  This is just an example.  Do as I say, not as I do, etc.
-		 * TODO: You may want to reuse the send_or_exit and recv_or_exit
-		 * functions I provided in lab 02's solution.
-		 */
-        send(sock, "Howdy, client.\n", 15, 0);
-
-        /* 
 		 * Tell the OS to clean up the resources associated with that client
          * connection, now that we're done with it.
 		 */
