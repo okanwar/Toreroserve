@@ -32,6 +32,7 @@
 #include <thread>
 #include <string>
 #include <iostream>
+#include <system_error>
 
 // Un-comment the following lines if you plan on using Boost's Filesystem Library.
 /*
@@ -90,7 +91,8 @@ void sendData(int socked_fd, const char *data, size_t data_length) {
 	
 	int num_bytes_sent = send(socked_fd, data, data_length, 0);
 	if (num_bytes_sent == -1) {
-		throw std::runtime_error(strerror(errno));
+		std::error_code ec(errno, std::generic_category());
+		throw std::system_error(ec, "send failed");
 	}
 }
 
@@ -106,7 +108,8 @@ void sendData(int socked_fd, const char *data, size_t data_length) {
 int receiveData(int socked_fd, char *dest, size_t buff_size) {
 	int num_bytes_received = recv(socked_fd, dest, buff_size, 0);
 	if (num_bytes_received == -1) {
-		throw std::runtime_error(strerror(errno));
+		std::error_code ec(errno, std::generic_category());
+		throw std::system_error(ec, "recv failed");
 	}
 
 	return num_bytes_received;
