@@ -47,11 +47,13 @@ using std::vector;
 using std::thread;
 
 // This will limit how many clients can be waiting for a connection.
-const int BACKLOG = 10;
+static const int BACKLOG = 10;
 
 int createSocketAndListen(const int port_num);
 void acceptConnections(const int server_sock);
 void handleClient(const int client_sock);
+void sendData(int socked_fd, const char *data, size_t data_length);
+int receiveData(int socked_fd, char *dest, size_t buff_size);
 
 int main(int argc, char** argv) {
 
