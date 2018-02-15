@@ -49,6 +49,7 @@ using std::thread;
 // This will limit how many clients can be waiting for a connection.
 static const int BACKLOG = 10;
 
+// forward declarations
 int createSocketAndListen(const int port_num);
 void acceptConnections(const int server_sock);
 void handleClient(const int client_sock);
@@ -121,19 +122,26 @@ int receiveData(int socked_fd, char *dest, size_t buff_size) {
  * Receives a request from a connected HTTP client and sends back the
  * appropriate response.
  *
+ * @note After this function returns, client_sock will have been closed (i.e.
+ * may not be used again).
+ *
  * @param client_sock The client's socket file descriptor.
  */
 void handleClient(const int client_sock) {
 	// TODO: Receive the request from the client. You can use receiveData here.
 	
-	// TODO: Parse the request to determine what response to generate.
+	// TODO: Parse the request to determine what response to generate. I
+	// recommend using regular expressions (specifically C++'s std::regex) to
+	// determine if a request is properly formatted.
 	
 	// TODO: Generate appropriate response.
 	
 	// TODO: Send response to client.
+	
+	// TODO: Close connection with client.
 }
 
-/*
+/**
  * Creates a new socket and starts listening on that socket for new
  * connections.
  *
@@ -198,10 +206,10 @@ int createSocketAndListen(const int port_num) {
 
     /* 
 	 * Now that we've bound to an address and port, we tell the OS that we're
-     * ready to start listening for client connections.  This effectively
-     * activates the server socket.  BACKLOG (#defined above) tells the OS how
-     * much space to reserve for incoming connections that have not yet been
-     * accepted.
+     * ready to start listening for client connections. This effectively
+	 * activates the server socket. BACKLOG (a global constant defined above)
+	 * tells the OS how much space to reserve for incoming connections that have
+	 * not yet been accepted.
 	 */
     retval = listen(sock, BACKLOG);
     if(retval < 0) {
@@ -212,7 +220,7 @@ int createSocketAndListen(const int port_num) {
 	return sock;
 }
 
-/*
+/**
  * Sit around forever accepting new connections from client.
  *
  * @param server_sock The socket used by the server.
