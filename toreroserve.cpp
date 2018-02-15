@@ -90,8 +90,7 @@ void sendData(int socked_fd, const char *data, size_t data_length) {
 	
 	int num_bytes_sent = send(socked_fd, data, data_length, 0);
 	if (num_bytes_sent == -1) {
-		perror("send");
-		throw std::runtime_error("send failed");
+		throw std::runtime_error(strerror(errno));
 	}
 }
 
@@ -107,8 +106,7 @@ void sendData(int socked_fd, const char *data, size_t data_length) {
 int receiveData(int socked_fd, char *dest, size_t buff_size) {
 	int num_bytes_received = recv(socked_fd, dest, buff_size, 0);
 	if (num_bytes_received == -1) {
-		perror("recv");
-		throw std::runtime_error("recv failed");
+		throw std::runtime_error(strerror(errno));
 	}
 
 	return num_bytes_received;
