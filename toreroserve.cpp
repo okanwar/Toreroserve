@@ -6,10 +6,8 @@
  * 	1. The port number on which to bind and listen for connections
  * 	2. The directory out of which to serve files.
  *
- * 	TODO: update author info with names and USD email addresses
- *
- * Author 1:
- * Author 2:
+ * Author 1: Om Kanwar okanwar@sandiego.edu
+ * Author 2: Chris Jung christopherjung@sandiego.edu
  */
 
 // standard C libraries
@@ -33,13 +31,8 @@
 #include <string>
 #include <iostream>
 #include <system_error>
-
-// Un-comment the following lines if you plan on using Boost's Filesystem Library.
-/*
 #include <boost/filesystem.hpp>
-
 namespace fs = boost::filesystem;
-*/
 
 using std::cout;
 using std::string;
