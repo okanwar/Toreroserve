@@ -57,14 +57,13 @@ int main(int argc, char** argv) {
 		cout << "INCORRECT USAGE!\n";
 		exit(1);
 	}
-
     /* Read the port number from the first command line argument. */
     int port = std::stoi(argv[1]);
 
 	/* Create a socket and start listening for new connections on the
 	 * specified port. */
 	int server_sock = createSocketAndListen(port);
-
+	
 	/* Now let's start accepting connections. */
 	acceptConnections(server_sock);
 
@@ -121,12 +120,20 @@ int receiveData(int socked_fd, char *dest, size_t buff_size) {
  * @param client_sock The client's socket file descriptor.
  */
 void handleClient(const int client_sock) {
-	// TODO: Receive the request from the client. You can use receiveData here.
 	
+	// NOTE: CHRIS EDITED THIS ON 2/19
+	
+	
+	// TODO: Receive the request from the client. You can use receiveData here.
+	char response_buffer[512];
+	int response = receiveData(client_sock, response_buffer, (size_t)512);
+	
+	cout << "handling client\n";	
+		
 	// TODO: Parse the request to determine what response to generate. I
 	// recommend using regular expressions (specifically C++'s std::regex) to
 	// determine if a request is properly formatted.
-	
+		
 	// TODO: Generate appropriate response.
 	
 	// TODO: Send response to client.
@@ -147,7 +154,6 @@ int createSocketAndListen(const int port_num) {
         perror("Creating socket failed");
         exit(1);
     }
-
     /* 
 	 * A server socket is bound to a port, which it will listen on for incoming
      * connections.  By default, when a bound socket is closed, the OS waits a
@@ -230,7 +236,7 @@ void acceptConnections(const int server_sock) {
 		 */
         struct sockaddr_in remote_addr;
         unsigned int socklen = sizeof(remote_addr); 
-
+		cout << "Start spinning\n";
         /* 
 		 * Accept the first waiting connection from the server socket and
          * populate the address information.  The result (sock) is a socket
@@ -243,7 +249,7 @@ void acceptConnections(const int server_sock) {
             perror("Error accepting connection");
             exit(1);
         }
-
+		cout << "found something\n";
         /* 
 		 * At this point, you have a connected socket (named sock) that you can
          * use to send() and recv(). The handleClient function should handle all
