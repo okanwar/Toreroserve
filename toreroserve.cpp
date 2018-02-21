@@ -42,6 +42,7 @@ using std::thread;
 
 // This will limit how many clients can be waiting for a connection.
 static const int BACKLOG = 10;
+static const int bufferSize = 2048;
 
 // forward declarations
 int createSocketAndListen(const int port_num);
@@ -126,13 +127,12 @@ void handleClient(const int client_sock) {
 	
 	
 	// TODO: Receive the request from the client. You can use receiveData here.
-	char response_buffer[512];
+	char response_buffer[bufferSize];
 	int response = receiveData(client_sock, response_buffer, sizeof(response_buffer));
 	if (response <= 0)
 	{
-		//
+		//There was no data received
 	}
-	
 	cout << response_buffer;	
 		
 	// TODO: Parse the request to determine what response to generate. I
@@ -145,17 +145,36 @@ void handleClient(const int client_sock) {
 		// This means the request is not properly formatted (first line)
 	}
 
-	char temporaryBuffer[512];
-	std::copy(response_buffer, response_buffer+512, temporaryBuffer);
-	char * command = std::strtok(temporaryBuffer, " ");
+	char temporary_buffer[bufferSize];
+	std::copy(response_buffer, response_buffer+bufferSize, temporary_buffer);
+	char * command = std::strtok(temporary_buffer, " ");
 	char * location = std::strtok(NULL, " ");
+	char * httpType = std::strtok(NULL, " "); 
 	cout << command << "\n" << location << "\n";
 		
 	// TODO: Generate appropriate response.
-	
+	char send_buffer [bufferSize]; 
+	std::string folder ("/WWW");
+	folder.copy(send_buffer, bufferSize);
+	strcat(send_buffer, location);
+
+	cout << send_buffer << "\n";
+
+	boost::filesystem::path p(send_buffer);
+	if (exists(p))
+	{
+		cout << p << " exists on server\n";
+	}
+	else 
+	{
+		cout << p << " does not exist\n";
+	}
 	// TODO: Send response to client.
 	
 	// TODO: Close connection with client.
+	memset(temporary_buffer, 0, sizeof(temporary_buffer));
+	memset(send_buffer, 0, sizeof(send_buffer));
+	memset(response_buffer, 0, sizeof(response_buffer));
 }
 
 /**
