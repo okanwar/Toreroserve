@@ -138,7 +138,7 @@ void handleClient(const int client_sock) {
 	// TODO: Parse the request to determine what response to generate. I
 	// recommend using regular expressions (specifically C++'s std::regex) to
 	// determine if a request is properly formatted.
-	std::regex regularExpression ("GET /.+/* HTTP/.*");
+	std::regex regularExpression ("GET /.+ HTTP/.*");
 	if (!regex_match(response_buffer, regularExpression))
 	{	
 		return; // lol 
@@ -149,25 +149,38 @@ void handleClient(const int client_sock) {
 	std::copy(response_buffer, response_buffer+bufferSize, temporary_buffer);
 	char * command = std::strtok(temporary_buffer, " ");
 	char * location = std::strtok(NULL, " ");
-	char * httpType = std::strtok(NULL, " "); 
+	char * httpType = std::strtok(NULL, " ");
+	std::string location_string(location);
+	std::string command_string(command);
+	std::string httpType_string(httpType); 
 	cout << command << "\n" << location << "\n";
 		
 	// TODO: Generate appropriate response.
 	char send_buffer [bufferSize]; 
-	std::string folder ("/WWW");
+	std::string folder ("WWW");
+	folder = folder + location_string;
 	folder.copy(send_buffer, bufferSize);
-	strcat(send_buffer, location);
+	//strcat(send_buffer, location);
+	//location_string.(send_buffer, bufferSize);
 
-	cout << send_buffer << "\n";
-
-	boost::filesystem::path p(send_buffer);
-	if (exists(p))
+	cout << "Before send, send_buffer is :" << send_buffer << "\n";
+	fs::path p(send_buffer);
+	cout << p;
+	if (fs::exists(p))
 	{
 		cout << p << " exists on server\n";
 	}
-	else 
+	if (fs::is_directory(p))
 	{
-		cout << p << " does not exist\n";
+		cout << p << " is directory\n";
+	}
+	if (fs::is_regular_file(p))
+	{
+		cout << p << " is regularFile\n";
+	}
+	if (fs::path_traits::empty(p)) 
+	{
+		cout << p << " is empty\n";
 	}
 	// TODO: Send response to client.
 	
