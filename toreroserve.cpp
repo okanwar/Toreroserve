@@ -156,15 +156,15 @@ void handleClient(const int client_sock) {
 	cout << command << "\n" << location << "\n";
 		
 	// TODO: Generate appropriate response.
-	char send_buffer [bufferSize]; 
+	char search_buffer [512]; 
 	std::string folder ("WWW");
 	folder = folder + location_string;
-	folder.copy(send_buffer, bufferSize);
-	//strcat(send_buffer, location);
-	//location_string.(send_buffer, bufferSize);
+	folder.copy(search_buffer, bufferSize);
+	//strcat(search_buffer, location);
+	//location_string.(search_buffer, bufferSize);
 
-	cout << "Before send, send_buffer is :" << send_buffer << "\n";
-	fs::path p(send_buffer);
+	cout << "Before send, send_buffer is :" << search_buffer << "\n";
+	fs::path p(search_buffer);
 	cout << p;
 	if (fs::exists(p))
 	{
@@ -173,20 +173,29 @@ void handleClient(const int client_sock) {
 	if (fs::is_directory(p))
 	{
 		cout << p << " is directory\n";
+		if (fs::path_traits::empty(p)) 
+		{
+			cout << p << " is empty\n";
+		}
 	}
 	if (fs::is_regular_file(p))
 	{
 		cout << p << " is regularFile\n";
+		// Regular file, could be html, txt, jpeg, gif, png, pdf
+		fs::path d(fs::extension(p));
+		cout << fs::extension(p) <<  "\n";
+
 	}
-	if (fs::path_traits::empty(p)) 
-	{
-		cout << p << " is empty\n";
-	}
+	// TODO: Generate response from file if exists
+	
+
 	// TODO: Send response to client.
+
+
 	
 	// TODO: Close connection with client.
 	memset(temporary_buffer, 0, sizeof(temporary_buffer));
-	memset(send_buffer, 0, sizeof(send_buffer));
+	memset(search_buffer, 0, sizeof(search_buffer));
 	memset(response_buffer, 0, sizeof(response_buffer));
 }
 
