@@ -32,6 +32,7 @@
 #include <iostream>
 #include <system_error>
 #include <boost/filesystem.hpp>
+#include <regex>
 namespace fs = boost::filesystem;
 
 using std::cout;
@@ -126,13 +127,24 @@ void handleClient(const int client_sock) {
 	
 	// TODO: Receive the request from the client. You can use receiveData here.
 	char response_buffer[512];
-	int response = receiveData(client_sock, response_buffer, (size_t)512);
+	int response = receiveData(client_sock, response_buffer, sizeof(response_buffer));
 	
-	cout << "handling client\n";	
+	cout << response_buffer;	
 		
 	// TODO: Parse the request to determine what response to generate. I
 	// recommend using regular expressions (specifically C++'s std::regex) to
 	// determine if a request is properly formatted.
+	std::regex regularExpression ("GET /.+ HTTP/.*");
+	if (!regex_match(response_buffer, regularExpression))
+	{	
+		return; // lol 
+	}
+	
+	char temporaryBuffer[512];
+	std::copy(response_buffer, response_buffer+512, temporaryBuffer);
+	char * command = std::strtok(temporaryBuffer, " ");
+	char * location = std::strtok(NULL, " ");
+	cout << command << "\n" << location << "\n";
 		
 	// TODO: Generate appropriate response.
 	
