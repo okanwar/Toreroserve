@@ -128,18 +128,23 @@ void handleClient(const int client_sock) {
 	// TODO: Receive the request from the client. You can use receiveData here.
 	char response_buffer[512];
 	int response = receiveData(client_sock, response_buffer, sizeof(response_buffer));
+	if (response <= 0)
+	{
+		//
+	}
 	
 	cout << response_buffer;	
 		
 	// TODO: Parse the request to determine what response to generate. I
 	// recommend using regular expressions (specifically C++'s std::regex) to
 	// determine if a request is properly formatted.
-	std::regex regularExpression ("GET /.+ HTTP/.*");
+	std::regex regularExpression ("GET /.+/* HTTP/.*");
 	if (!regex_match(response_buffer, regularExpression))
 	{	
 		return; // lol 
+		// This means the request is not properly formatted (first line)
 	}
-	
+
 	char temporaryBuffer[512];
 	std::copy(response_buffer, response_buffer+512, temporaryBuffer);
 	char * command = std::strtok(temporaryBuffer, " ");
