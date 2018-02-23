@@ -112,6 +112,13 @@ int receiveData(int socked_fd, char *dest, size_t buff_size) {
 	return num_bytes_received;
 }
 
+void sendFileNotFound (const int &client_sock, std::string &httpTypeResponse)
+{
+	std::string toReturn(httpTypeResponse);
+	toReturn = toReturn + " ";
+	cout << toReturn;
+}
+
 /**
  * Receives a request from a connected HTTP client and sends back the
  * appropriate response.
@@ -169,6 +176,11 @@ void handleClient(const int client_sock) {
 	if (fs::exists(p))
 	{
 		cout << p << " exists on server\n";
+	}
+	else 
+	{
+		sendFileNotFound(client_sock, httpType_string);
+		return ;
 	}
 	if (fs::is_directory(p))
 	{
