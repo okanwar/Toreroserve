@@ -33,6 +33,8 @@
 #include <system_error>
 #include <boost/filesystem.hpp>
 #include <regex>
+#include <chrono>
+#include <ctime>
 namespace fs = boost::filesystem;
 
 using std::cout;
@@ -112,11 +114,47 @@ int receiveData(int socked_fd, char *dest, size_t buff_size) {
 	return num_bytes_received;
 }
 
-void sendFileNotFound (const int &client_sock, std::string &httpTypeResponse)
+void sendFileNotFound (const int client_sock, std::string httpTypeResponse)
 {
-	std::string toReturn(httpTypeResponse);
-	toReturn = toReturn + " ";
-	cout << toReturn;
+	std::string toReturn;
+	toReturn += httpTypeResponse;
+	//cout << toReturn << '\n';
+	toReturn.append(" 404 Not Found\r\nConnection: close\r\nDate: ");
+	// Insert Date
+	time_t currentTime = time(0);
+	char getDate[80];
+	strftime(getDate, 80, "%a, %d %b %Y %X", localtime(&currentTime));
+	std::string date_string(getDate);
+	toReturn.append(date_string);
+	toReturn.append("\r\n\r\n");
+	toReturn.append("<html><head><title>Page Not Found</title></head><body>404 Not Found</body></html>");
+	cout << "Message is\r\n\r\n" << toReturn << '\n';
+
+	// Copy to char array and send
+	char message [toReturn.length() + 1];
+	strcpy(message, toReturn.c_str());
+	sendData(client_sock, message, sizeof(message)); 
+}
+
+void sendBadRequest (const int client_sock, std::string httpTypeResponse)
+{
+	std::string toReturn;
+	toReturn += httpTypeResponse;
+	//cout << toReturn << '\n';
+	toReturn.append(" 400 Bad Request\r\nConnection: close\r\nDate: ");
+	// Insert Date
+	time_t currentTime = time(0);
+	char getDate[80];
+	strftime(getDate, 80, "%a, %d %b %Y %X", localtime(&currentTime));
+	std::string date_string(getDate);
+	toReturn.append(date_string);
+	toReturn.append("\r\n");
+	cout << "Message is\r\n\r\n" << toReturn << '\n';
+
+	// Copy to char array and send
+	char message [toReturn.length() + 1];
+	strcpy(message, toReturn.c_str());
+	sendData(client_sock, message, sizeof(message)); 
 }
 
 /**
@@ -140,7 +178,7 @@ void handleClient(const int client_sock) {
 	{
 		//There was no data received
 	}
-	cout << response_buffer;	
+	cout << response_buffer<< "\n";	
 		
 	// TODO: Parse the request to determine what response to generate. I
 	// recommend using regular expressions (specifically C++'s std::regex) to
@@ -156,11 +194,11 @@ void handleClient(const int client_sock) {
 	std::copy(response_buffer, response_buffer+bufferSize, temporary_buffer);
 	char * command = std::strtok(temporary_buffer, " ");
 	char * location = std::strtok(NULL, " ");
-	char * httpType = std::strtok(NULL, " ");
+	char * httpType = std::strtok(NULL, "\r");
 	std::string location_string(location);
 	std::string command_string(command);
 	std::string httpType_string(httpType); 
-	cout << command << "\n" << location << "\n";
+	cout << "Command = <" << command_string << ">, Location = <"  << location_string << ">, HttpType = <" << httpType_string << ">\n";
 		
 	// TODO: Generate appropriate response.
 	char search_buffer [512]; 
@@ -170,8 +208,8 @@ void handleClient(const int client_sock) {
 	//strcat(search_buffer, location);
 	//location_string.(search_buffer, bufferSize);
 
-	cout << "Before send, send_buffer is :" << search_buffer << "\n";
-	fs::path p(search_buffer);
+	cout << "Before send, send_buffer is :" << folder << "\n";
+	fs::path p(folder);
 	cout << p;
 	if (fs::exists(p))
 	{
