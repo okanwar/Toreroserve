@@ -165,7 +165,7 @@ void sendBadRequest (const int client_sock)
 	sendData(client_sock, message, sizeof(message)); 
 }
 
-void sendOK (const int client_sock, char* contents, std::uintmax_t size, fs::path extension, std::vector<char> s)
+void sendOK (const int client_sock, char* contents, int size, fs::path extension, std::vector<char> s)
 {
 	// Create 200 Return Message
 	std::string toReturn ("HTTP/1.1 200 OK\r\nDate: ");
@@ -175,7 +175,8 @@ void sendOK (const int client_sock, char* contents, std::uintmax_t size, fs::pat
 	toReturn.append(dateToString());
 	toReturn.append("\r\n");
 	toReturn.append("Content-Length: ");
-	toReturn.append(boost::lexical_cast<std::string>(size));
+	toReturn.append(boost::lexical_cast<std::string>(s.size()));
+	//toReturn.append(s.size());
 	toReturn.append("\r\n");
 	toReturn.append("Content-Type: ");
 	std::string extension_string(extension.string());
@@ -183,28 +184,36 @@ void sendOK (const int client_sock, char* contents, std::uintmax_t size, fs::pat
 	toReturn.append("\r\n\r\n");
 
 	// EVERYTHING AFTER THIS IS A WORK IN PROGRESS
-	
-	int init_size = toReturn.length();
-	const char * t = toReturn.c_str();
-	// Copy to char array and send
-	int messageSize = init_size + s.size() + 1;
-	char message[init_size+1]; 				// This is final don't touch it
-	
-	cout << s.size() << " " << size << "\r\n";
-	char entityBody[s.size()];
+	cout << "size is " << s.size() << "\r\n";
+//	std::string content(s.begin(), s.end());
 
+//	toReturn.append(content);
+	//char header[toReturn.length() + 1];
+	//int init_size = toReturn.length();
+	//const char * t = toReturn.c_str();
+	// Copy to char array and send
+//	cout << "buffer size is " << << "\r\n";
+	int  messageSize = toReturn.length()+ 2 + size;
+//	cout << "message size is " << messageSize << "\r\n";
+	char message [toReturn.length()+1];
+	strcpy (message, toReturn.c_str());
+	
+	//cout << s.size() << " " << size << "\r\n";
+	char entityBody[s.size() + 1];
 	//cout << "Start representation:\r\n" << toReturn.c_str() << "\r\n";
 	//strcat(message, contents);
 	std::copy(s.begin(), s.end(), entityBody);
-	entityBody[s.size()] = '\0';
-
+	//char* char_arr = s.data();
+//	entityBody[size] = '\0';
+	///strcpy(msg, toReturn.c_str());
+	//cout << "b1:" << toReturn.length()+1 << " b2:" << size << " bf:" << messageSize << "\r\n";
 	char finalMessage[messageSize];
-	strcpy(message, toReturn.c_str());
-	strcpy(finalMessage, message);
-	strcat(finalMessage, entityBody);
+	memcpy(finalMessage, message, toReturn.length());
+	//strcpy(finalMessage, message);
+	memcpy((finalMessage + toReturn.length()), entityBody, s.size());
 
-	sendData(client_sock, finalMessage, sizeof(finalMessage)); 	
-	
+	sendData(client_sock, finalMessage, messageSize); 	
+	cout << finalMessage;	
 }
 
 /**
@@ -292,14 +301,32 @@ void handleClient(const int client_sock) {
 			if (!inFile) 
 			{
 				cout << "Unable to open file\r\n";
-			}			
-			std::vector<char> buffer ((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
-			char contents[fileSize];
-			inFile.read(contents, fileSize);
+			}
+			inFile.seekg(0, std::ios::end);			
+			std::streampos position = inFile.tellg();
+			cout << "length :" << position << "\r\n";
+			inFile.seekg(0, std::ios::beg);
+			//std::vector<char> buffer (position);
+			std::vector<char> buffer((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+			int passPosition = (int)position;
+			//buffer.reserve(position);
+			//buffer.insert (buffer.begin(), std::istream_iterator<char>(inFile), std::istream_iterator<char>());// ((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+			//inFile.seekg(0, std::ios::end);
+			//int sizeF = inFile.tellg();
+			//inFile.read(buffer, position);
+			//char contents[sizeF + 1];
+			//inFile.read(contents, sizeF);
 			inFile.close();
+			//contents[sizeF] = '\0';
+			//cout << "Got this many bytes: " << sizeF << " and first byte is " << contents[sizeF-1] << "\r\n";
+			//cout << contents << "\r\n";
+			//std::vector<unsigned char> filedata(sizeF);
+			//filedata.insert(filedata.begin(), std::istream_iterator<unsigned char>(inFile), std::istream_iterator<unsigned char>());
+			//inFile.read((char*) &filedata[0], sizeF);
 		
 			// Append file to 200 OK Message
-			sendOK(client_sock, contents, fileSize, fs::extension(p), buffer);
+			sendOK(client_sock, NULL, passPosition, fs::extension(p), buffer);
+			
 		}	
 	}
 	else 
