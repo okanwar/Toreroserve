@@ -32,9 +32,12 @@
 #include <iostream>
 #include <system_error>
 #include <boost/filesystem.hpp>
+#include <boost/range/iterator_range.hpp>
+#include <boost/lexical_cast.hpp>
 #include <regex>
-#include <chrono>
 #include <ctime>
+#include <fstream>
+#include <iostream>
 namespace fs = boost::filesystem;
 
 using std::cout;
@@ -52,6 +55,10 @@ void acceptConnections(const int server_sock);
 void handleClient(const int client_sock);
 void sendData(int socked_fd, const char *data, size_t data_length);
 int receiveData(int socked_fd, char *dest, size_t buff_size);
+std::string dateToString(void);
+void sendFileNotFound (const int client_sock, std::string httpTypeResponse);
+void sendOK (const int client_sock, char* contents, std::uintmax_t size, fs::path extension);
+void sendBadRequest (const int client_sock);
 
 int main(int argc, char** argv) {
 
@@ -114,18 +121,24 @@ int receiveData(int socked_fd, char *dest, size_t buff_size) {
 	return num_bytes_received;
 }
 
-void sendFileNotFound (const int client_sock, std::string httpTypeResponse)
+std::string dateToString ()
 {
-	std::string toReturn;
-	toReturn += httpTypeResponse;
-	//cout << toReturn << '\n';
-	toReturn.append(" 404 Not Found\r\nConnection: close\r\nDate: ");
-	// Insert Date
 	time_t currentTime = time(0);
 	char getDate[80];
 	strftime(getDate, 80, "%a, %d %b %Y %X", localtime(&currentTime));
 	std::string date_string(getDate);
-	toReturn.append(date_string);
+	return date_string;
+}
+
+void sendFileNotFound (const int client_sock, std::string httpTypeResponse)
+{
+	// Create 404 Return Message
+	std::string toReturn;
+	toReturn += httpTypeResponse;
+	toReturn.append(" 404 Not Found\r\nConnection: close\r\nDate: ");
+
+	// Insert Date and Entity Body
+	toReturn.append(dateToString());
 	toReturn.append("\r\n\r\n");
 	toReturn.append("<html><head><title>Page Not Found</title></head><body>404 Not Found</body></html>");
 	cout << "Message is\r\n\r\n" << toReturn << '\n';
@@ -136,18 +149,13 @@ void sendFileNotFound (const int client_sock, std::string httpTypeResponse)
 	sendData(client_sock, message, sizeof(message)); 
 }
 
-void sendBadRequest (const int client_sock, std::string httpTypeResponse)
+void sendBadRequest (const int client_sock)
 {
-	std::string toReturn;
-	toReturn += httpTypeResponse;
-	//cout << toReturn << '\n';
-	toReturn.append(" 400 Bad Request\r\nConnection: close\r\nDate: ");
-	// Insert Date
-	time_t currentTime = time(0);
-	char getDate[80];
-	strftime(getDate, 80, "%a, %d %b %Y %X", localtime(&currentTime));
-	std::string date_string(getDate);
-	toReturn.append(date_string);
+	// Create 400 Return Message
+	std::string toReturn ("HTTP:/1.1 400 Bad Request\r\nConnection: close\r\nDate: ");
+	
+	// Insert Date 
+	toReturn.append(dateToString());
 	toReturn.append("\r\n");
 	cout << "Message is\r\n\r\n" << toReturn << '\n';
 
@@ -155,6 +163,48 @@ void sendBadRequest (const int client_sock, std::string httpTypeResponse)
 	char message [toReturn.length() + 1];
 	strcpy(message, toReturn.c_str());
 	sendData(client_sock, message, sizeof(message)); 
+}
+
+void sendOK (const int client_sock, char* contents, std::uintmax_t size, fs::path extension, std::vector<char> s)
+{
+	// Create 200 Return Message
+	std::string toReturn ("HTTP/1.1 200 OK\r\nDate: ");
+
+	cout << toReturn.length() << "\r\n";
+	// Insert Date
+	toReturn.append(dateToString());
+	toReturn.append("\r\n");
+	toReturn.append("Content-Length: ");
+	toReturn.append(boost::lexical_cast<std::string>(size));
+	toReturn.append("\r\n");
+	toReturn.append("Content-Type: ");
+	std::string extension_string(extension.string());
+	toReturn.append(extension_string.substr(1));
+	toReturn.append("\r\n\r\n");
+
+	// EVERYTHING AFTER THIS IS A WORK IN PROGRESS
+	
+	int init_size = toReturn.length();
+	const char * t = toReturn.c_str();
+	// Copy to char array and send
+	int messageSize = init_size + s.size() + 1;
+	char message[init_size+1]; 				// This is final don't touch it
+	
+	cout << s.size() << " " << size << "\r\n";
+	char entityBody[s.size()];
+
+	//cout << "Start representation:\r\n" << toReturn.c_str() << "\r\n";
+	//strcat(message, contents);
+	std::copy(s.begin(), s.end(), entityBody);
+	entityBody[s.size()] = '\0';
+
+	char finalMessage[messageSize];
+	strcpy(message, toReturn.c_str());
+	strcpy(finalMessage, message);
+	strcat(finalMessage, entityBody);
+
+	sendData(client_sock, finalMessage, sizeof(finalMessage)); 	
+	
 }
 
 /**
@@ -168,14 +218,13 @@ void sendBadRequest (const int client_sock, std::string httpTypeResponse)
  */
 void handleClient(const int client_sock) {
 	
-	// NOTE: CHRIS EDITED THIS ON 2/19
-	
 	
 	// TODO: Receive the request from the client. You can use receiveData here.
 	char response_buffer[bufferSize];
 	int response = receiveData(client_sock, response_buffer, sizeof(response_buffer));
 	if (response <= 0)
 	{
+		return; //lol
 		//There was no data received
 	}
 	cout << response_buffer<< "\n";	
@@ -186,7 +235,9 @@ void handleClient(const int client_sock) {
 	std::regex regularExpression ("GET /.+ HTTP/.*");
 	if (!regex_match(response_buffer, regularExpression))
 	{	
-		return; // lol 
+		sendBadRequest(client_sock);
+		close(client_sock);
+		return;
 		// This means the request is not properly formatted (first line)
 	}
 
@@ -211,32 +262,52 @@ void handleClient(const int client_sock) {
 	cout << "Before send, send_buffer is :" << folder << "\n";
 	fs::path p(folder);
 	cout << p;
+
+	// TODO: Generate response from file if exists
 	if (fs::exists(p))
 	{
 		cout << p << " exists on server\n";
+		if (fs::is_directory(p))
+		{	
+			cout << p << " is directory\n";
+			if (fs::path_traits::empty(p)) 
+			{
+				cout << p << " is empty\n";
+			}
+			for (auto& entry : boost::make_iterator_range(fs::directory_iterator(p), {}))
+			{
+				cout << entry << "\r\n";
+			}
+		}
+		if (fs::is_regular_file(p))
+		{
+			cout << p << " is regularFile\n";
+			fs::path d(fs::extension(p));
+			cout << fs::file_size(p) <<"\n";
+			std::uintmax_t fileSize = fs::file_size(p);
+
+			// Read binary of file to string
+			std::ifstream inFile;
+			inFile.open(p.string(), std::ios::binary|std::ios::in);
+			if (!inFile) 
+			{
+				cout << "Unable to open file\r\n";
+			}			
+			std::vector<char> buffer ((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+			char contents[fileSize];
+			inFile.read(contents, fileSize);
+			inFile.close();
+		
+			// Append file to 200 OK Message
+			sendOK(client_sock, contents, fileSize, fs::extension(p), buffer);
+		}	
 	}
 	else 
 	{
 		sendFileNotFound(client_sock, httpType_string);
-		return ;
+		close(client_sock);
+		return;
 	}
-	if (fs::is_directory(p))
-	{
-		cout << p << " is directory\n";
-		if (fs::path_traits::empty(p)) 
-		{
-			cout << p << " is empty\n";
-		}
-	}
-	if (fs::is_regular_file(p))
-	{
-		cout << p << " is regularFile\n";
-		// Regular file, could be html, txt, jpeg, gif, png, pdf
-		fs::path d(fs::extension(p));
-		cout << fs::extension(p) <<  "\n";
-
-	}
-	// TODO: Generate response from file if exists
 	
 
 	// TODO: Send response to client.
