@@ -57,7 +57,7 @@ void sendData(int socked_fd, const char *data, size_t data_length);
 int receiveData(int socked_fd, char *dest, size_t buff_size);
 std::string dateToString(void);
 void sendFileNotFound (const int client_sock, std::string httpTypeResponse);
-void sendOK (const int client_sock, char* contents, std::uintmax_t size, fs::path extension);
+//void sendOK (const int client_sock, int size, fs::path extension, std::vector<char> s);
 void sendBadRequest (const int client_sock);
 
 int main(int argc, char** argv) {
@@ -164,56 +164,109 @@ void sendBadRequest (const int client_sock)
 	strcpy(message, toReturn.c_str());
 	sendData(client_sock, message, sizeof(message)); 
 }
-
-void sendOK (const int client_sock, char* contents, int size, fs::path extension, std::vector<char> s)
+/*
+char * generateBufferFromFile (fs::path p)
 {
+	std::ifstream inFile;
+	inFile.open(p.string(), std::ios::binary|std::ios::in);
+	if (!inFile) 
+	{
+		cout << "Unable to open file\r\n";
+	}
+	inFile.seekg(0, std::ios::end);			
+	std::streampos position = inFile.tellg();
+	//cout << "length :" << position << "\r\n";
+	inFile.seekg(0, std::ios::beg);
+	//std::vector<char> buffer (position);
+	std::vector<char> buffer((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
+	int passPosition = (int)position;
+	inFile.close();
+
+	char entityBody[buffer.size() + 1];
+	std::copy(buffer.begin(), buffer.end(), entityBody);
+	entityBody[buffer.size()] = '\0';
+	return entityBody;
+
+}*/
+void sendOK (const int client_sock, int size, fs::path extension, std::vector<char> s, std::string content)
+{
+	cout<< "got here\r\n";
 	// Create 200 Return Message
 	std::string toReturn ("HTTP/1.1 200 OK\r\nDate: ");
 
-	cout << toReturn.length() << "\r\n";
-	// Insert Date
+	cout << extension << "\r\n";
+	// Insert Date, Size, Filetype
 	toReturn.append(dateToString());
 	toReturn.append("\r\n");
 	toReturn.append("Content-Length: ");
-	toReturn.append(boost::lexical_cast<std::string>(s.size()));
-	//toReturn.append(s.size());
+	if (size < 0)
+		toReturn.append(boost::lexical_cast<std::string>(content.length()));
+	else
+		toReturn.append(boost::lexical_cast<std::string>(s.size()));
 	toReturn.append("\r\n");
 	toReturn.append("Content-Type: ");
 	std::string extension_string(extension.string());
 	toReturn.append(extension_string.substr(1));
 	toReturn.append("\r\n\r\n");
-
-	// EVERYTHING AFTER THIS IS A WORK IN PROGRESS
-	cout << "size is " << s.size() << "\r\n";
-//	std::string content(s.begin(), s.end());
-
-//	toReturn.append(content);
-	//char header[toReturn.length() + 1];
-	//int init_size = toReturn.length();
-	//const char * t = toReturn.c_str();
-	// Copy to char array and send
-//	cout << "buffer size is " << << "\r\n";
+	cout << "here\r\n"; 
+	// DON'T TOUCH THIS I DONT KNOW HOW IT WORKS 
+	//int  messageSize = toReturn.length()+ 2 + strlen(content);
 	int  messageSize = toReturn.length()+ 2 + size;
-//	cout << "message size is " << messageSize << "\r\n";
+	if (size < 0)
+		 messageSize = toReturn.length() + 2 + content.length();
+
+	// Create 2 temporary buffers to hold message/entityBody
 	char message [toReturn.length()+1];
 	strcpy (message, toReturn.c_str());
 	
-	//cout << s.size() << " " << size << "\r\n";
-	char entityBody[s.size() + 1];
-	//cout << "Start representation:\r\n" << toReturn.c_str() << "\r\n";
-	//strcat(message, contents);
-	std::copy(s.begin(), s.end(), entityBody);
-	//char* char_arr = s.data();
-//	entityBody[size] = '\0';
-	///strcpy(msg, toReturn.c_str());
-	//cout << "b1:" << toReturn.length()+1 << " b2:" << size << " bf:" << messageSize << "\r\n";
+	// Create final message, attach both and send
 	char finalMessage[messageSize];
 	memcpy(finalMessage, message, toReturn.length());
-	//strcpy(finalMessage, message);
-	memcpy((finalMessage + toReturn.length()), entityBody, s.size());
+	
+	if (size < 0)
+	{
+		char contentMessage[content.length() +1];
+		strcpy(contentMessage, content.c_str());
+		memcpy((finalMessage + toReturn.length()), contentMessage, content.length());
+		sendData(client_sock, finalMessage, messageSize);
+		cout << finalMessage << "\r\n";
+		return;
+	}
 
+	char entityBody[s.size() + 1];
+	std::copy(s.begin(), s.end(), entityBody);
+	memcpy((finalMessage + toReturn.length()), entityBody, s.size());
+	//memcpy((finalMessage + toReturn.length()), content, strlen(content));
 	sendData(client_sock, finalMessage, messageSize); 	
-	cout << finalMessage;	
+	cout << finalMessage << "\r\n";
+}
+
+std::string generateIndexHTML(fs::path directory)
+{
+	std::vector<fs::directory_entry> list; 
+	std::copy(fs::directory_iterator(directory), fs::directory_iterator(), std::back_inserter(list));
+	std::string returnHTML ("<html><head><title>Parent Directory</title></head><body>Files under ");
+	returnHTML.append(directory.string());
+	returnHTML.append("<br>");
+
+	for (fs::directory_entry d : list)
+	{	
+		std::string nextLink ("<a href=\"");
+		nextLink.append(d.path().string());
+		nextLink.append("\">");
+		nextLink.append(d.path().string());
+		nextLink.append("</a><br>");
+		returnHTML.append(nextLink);
+		//cout << d << "\r\n";
+	}
+	returnHTML.append("</body></html>");
+	
+	return returnHTML;
+	//for (auto& entry : boost::make_iterator_range(fs::directory_iterator(directory), {}))
+	//{
+	//	cout << entry << "\r\n";
+	//}
+	
 }
 
 /**
@@ -241,7 +294,7 @@ void handleClient(const int client_sock) {
 	// TODO: Parse the request to determine what response to generate. I
 	// recommend using regular expressions (specifically C++'s std::regex) to
 	// determine if a request is properly formatted.
-	std::regex regularExpression ("GET /.+ HTTP/.*");
+	std::regex regularExpression ("GET /.* HTTP/.*");
 	if (!regex_match(response_buffer, regularExpression))
 	{	
 		sendBadRequest(client_sock);
@@ -283,19 +336,21 @@ void handleClient(const int client_sock) {
 			{
 				cout << p << " is empty\n";
 			}
-			for (auto& entry : boost::make_iterator_range(fs::directory_iterator(p), {}))
-			{
-				cout << entry << "\r\n";
-			}
+			//if // does not contain index.html
+			std::string html;
+			html = generateIndexHTML(p);
+			cout << "abouttopass\r\n";
+			sendOK(client_sock, -1, ".html", std::vector<char>(), html);
 		}
 		if (fs::is_regular_file(p))
 		{
 			cout << p << " is regularFile\n";
 			fs::path d(fs::extension(p));
 			cout << fs::file_size(p) <<"\n";
-			std::uintmax_t fileSize = fs::file_size(p);
 
+			// char * file = generateBufferFromFile(p);
 			// Read binary of file to string
+			
 			std::ifstream inFile;
 			inFile.open(p.string(), std::ios::binary|std::ios::in);
 			if (!inFile) 
@@ -309,24 +364,11 @@ void handleClient(const int client_sock) {
 			//std::vector<char> buffer (position);
 			std::vector<char> buffer((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
 			int passPosition = (int)position;
-			//buffer.reserve(position);
-			//buffer.insert (buffer.begin(), std::istream_iterator<char>(inFile), std::istream_iterator<char>());// ((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
-			//inFile.seekg(0, std::ios::end);
-			//int sizeF = inFile.tellg();
-			//inFile.read(buffer, position);
-			//char contents[sizeF + 1];
-			//inFile.read(contents, sizeF);
 			inFile.close();
-			//contents[sizeF] = '\0';
-			//cout << "Got this many bytes: " << sizeF << " and first byte is " << contents[sizeF-1] << "\r\n";
-			//cout << contents << "\r\n";
-			//std::vector<unsigned char> filedata(sizeF);
-			//filedata.insert(filedata.begin(), std::istream_iterator<unsigned char>(inFile), std::istream_iterator<unsigned char>());
-			//inFile.read((char*) &filedata[0], sizeF);
-		
-			// Append file to 200 OK Message
-			sendOK(client_sock, NULL, passPosition, fs::extension(p), buffer);
 			
+			// Append file to 200 OK Message
+			sendOK(client_sock, passPosition, fs::extension(p), buffer, std::string());
+			//sendOK(client_sock, 0, p, file);
 		}	
 	}
 	else 
