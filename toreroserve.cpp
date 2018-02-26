@@ -164,8 +164,8 @@ void sendBadRequest (const int client_sock)
 	strcpy(message, toReturn.c_str());
 	sendData(client_sock, message, sizeof(message)); 
 }
-/*
-char * generateBufferFromFile (fs::path p)
+
+/*std::string generateStringFromFile (fs::path p)
 {
 	std::ifstream inFile;
 	inFile.open(p.string(), std::ios::binary|std::ios::in);
@@ -182,11 +182,9 @@ char * generateBufferFromFile (fs::path p)
 	int passPosition = (int)position;
 	inFile.close();
 
-	char entityBody[buffer.size() + 1];
-	std::copy(buffer.begin(), buffer.end(), entityBody);
-	entityBody[buffer.size()] = '\0';
+	std::string entityBody(buffer.begin(), buffer.end());
+//	std::copy(buffer.begin(), buffer.end(), entityBody);
 	return entityBody;
-
 }*/
 void sendOK (const int client_sock, int size, fs::path extension, std::vector<char> s, std::string content)
 {
@@ -246,27 +244,39 @@ std::string generateIndexHTML(fs::path directory)
 	std::vector<fs::directory_entry> list; 
 	std::copy(fs::directory_iterator(directory), fs::directory_iterator(), std::back_inserter(list));
 	std::string returnHTML ("<html><head><title>Parent Directory</title></head><body>Files under ");
-	returnHTML.append(directory.string());
+	returnHTML.append(directory.string().substr(directory.string().find("/")));
 	returnHTML.append("<br>");
 
 	for (fs::directory_entry d : list)
 	{	
 		std::string nextLink ("<a href=\"");
-		nextLink.append(d.path().string());
-		nextLink.append("\">");
-		nextLink.append(d.path().string());
-		nextLink.append("</a><br>");
+		std::string pathString(d.path().string());
+		std::size_t location = pathString.find("/");
+		std::string pathSub(pathString.substr(location));
+		nextLink.append(pathSub);
+		nextLink.append("/\">");
+		nextLink.append(pathSub);
+		nextLink.append("/</a><br>");
 		returnHTML.append(nextLink);
 		//cout << d << "\r\n";
 	}
 	returnHTML.append("</body></html>");
 	
 	return returnHTML;
-	//for (auto& entry : boost::make_iterator_range(fs::directory_iterator(directory), {}))
-	//{
-	//	cout << entry << "\r\n";
-	//}
-	
+}
+
+int containsIndex(fs::path directory)
+{
+	std::vector<fs::directory_entry> searchForIndex; 
+	std::copy(fs::directory_iterator(directory), fs::directory_iterator(), std::back_inserter(searchForIndex));
+	for (fs::directory_entry d : searchForIndex)
+	{
+		if (d.path().string().find("index.html") != std::string::npos)
+		{
+			return 1;
+		}
+	}
+	return 0;
 }
 
 /**
@@ -329,18 +339,26 @@ void handleClient(const int client_sock) {
 	if (fs::exists(p))
 	{
 		cout << p << " exists on server\n";
+		int indexExists = 0;
 		if (fs::is_directory(p))
 		{	
 			cout << p << " is directory\n";
-			if (fs::path_traits::empty(p)) 
+			if (containsIndex(p) == 1)
 			{
-				cout << p << " is empty\n";
+				std::string newPath(p.string());
+				if (!newPath[newPath.length()-1] != '/')
+					newPath.append("/");
+				newPath.append("index.html");
+				p = newPath;
+				cout << "changed path to:" << p.string() << "\r\n";
 			}
-			//if // does not contain index.html
-			std::string html;
-			html = generateIndexHTML(p);
-			cout << "abouttopass\r\n";
-			sendOK(client_sock, -1, ".html", std::vector<char>(), html);
+			else
+			{
+				std::string html;
+				html = generateIndexHTML(p);
+				cout << "abouttopass\r\n";
+				sendOK(client_sock, -1, ".html", std::vector<char>(), html);
+			}
 		}
 		if (fs::is_regular_file(p))
 		{
@@ -350,6 +368,7 @@ void handleClient(const int client_sock) {
 
 			// char * file = generateBufferFromFile(p);
 			// Read binary of file to string
+
 			
 			std::ifstream inFile;
 			inFile.open(p.string(), std::ios::binary|std::ios::in);
@@ -368,6 +387,7 @@ void handleClient(const int client_sock) {
 			
 			// Append file to 200 OK Message
 			sendOK(client_sock, passPosition, fs::extension(p), buffer, std::string());
+			//sendOK(client_sock, -1, d, std::vector<char>(), generateStringFromFile(p));
 			//sendOK(client_sock, 0, p, file);
 		}	
 	}
