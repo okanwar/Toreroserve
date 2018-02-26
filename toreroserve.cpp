@@ -293,6 +293,9 @@ void handleClient(const int client_sock) {
 	
 	// TODO: Receive the request from the client. You can use receiveData here.
 	char response_buffer[bufferSize];
+	//std::string test (response_buffer);
+	//std::string test2 (test.substr(0, test.find("\r")));
+	//cout << test2 << "\r\n";
 	int response = receiveData(client_sock, response_buffer, sizeof(response_buffer));
 	if (response <= 0)
 	{
@@ -304,13 +307,21 @@ void handleClient(const int client_sock) {
 	// TODO: Parse the request to determine what response to generate. I
 	// recommend using regular expressions (specifically C++'s std::regex) to
 	// determine if a request is properly formatted.
+	//std::regex http_request_regex("GET /([a-zA-Z0-9_\\-\\.]*) HTTP/1\\.0", std::regex_constants::ECMAScript);
+	//std::smatch request_match;
 	std::regex regularExpression ("GET /.* HTTP/.*");
-	if (!regex_match(response_buffer, regularExpression))
-	{	
+//	if (!regex_match(response_buffer, regularExpression))
+//	{	
+//		sendBadRequest(client_sock);
+//		close(client_sock);
+//		return;
+		// This means the request is not properly formatted (first line)
+//	}
+	if (!regex_search(response_buffer, regularExpression)) {
+		cout <<"i am here\n";
 		sendBadRequest(client_sock);
 		close(client_sock);
 		return;
-		// This means the request is not properly formatted (first line)
 	}
 
 	char temporary_buffer[bufferSize];
@@ -339,14 +350,14 @@ void handleClient(const int client_sock) {
 	if (fs::exists(p))
 	{
 		cout << p << " exists on server\n";
-		int indexExists = 0;
+	//	int indexExists = 0;
 		if (fs::is_directory(p))
 		{	
 			cout << p << " is directory\n";
 			if (containsIndex(p) == 1)
 			{
 				std::string newPath(p.string());
-				if (!newPath[newPath.length()-1] != '/')
+				if (newPath[newPath.length()-1] != '/')
 					newPath.append("/");
 				newPath.append("index.html");
 				p = newPath;
