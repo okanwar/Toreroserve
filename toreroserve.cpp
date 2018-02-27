@@ -94,11 +94,13 @@ int main(int argc, char** argv) {
 void sendData(int socked_fd, const char *data, size_t data_length) {
 	// TODO: Wrap the following code in a loop so that it keeps sending until
 	// the data has been completely sent.
-	
-	int num_bytes_sent = send(socked_fd, data, data_length, 0);
-	if (num_bytes_sent == -1) {
-		std::error_code ec(errno, std::generic_category());
-		throw std::system_error(ec, "send failed");
+	int num_bytes_remaining = data_length;
+	while(num_bytes_remaining > 0) {
+		int num_bytes_sent = send(socked_fd, data, data_length, 0);
+		if (num_bytes_sent == -1) {
+			std::error_code ec(errno, std::generic_category());
+			throw std::system_error(ec, "send failed");
+		}
 	}
 }
 
@@ -309,7 +311,8 @@ void handleClient(const int client_sock) {
 	// determine if a request is properly formatted.
 	//std::regex http_request_regex("GET /([a-zA-Z0-9_\\-\\.]*) HTTP/1\\.0", std::regex_constants::ECMAScript);
 	//std::smatch request_match;
-	std::regex regularExpression ("GET /.* HTTP/.*");
+	std::regex regularExpression ("GET /.+ HTTP/.*");
+	//std::regex regularExpression ("GET /.* HTTP/.*");
 //	if (!regex_match(response_buffer, regularExpression))
 //	{	
 //		sendBadRequest(client_sock);
@@ -317,6 +320,7 @@ void handleClient(const int client_sock) {
 //		return;
 		// This means the request is not properly formatted (first line)
 //	}
+	//if (!regex_search(response_buffer, regularExpression)) {
 	if (!regex_search(response_buffer, regularExpression)) {
 		cout <<"i am here\n";
 		sendBadRequest(client_sock);
