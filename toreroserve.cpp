@@ -65,23 +65,11 @@ void handleClient(BoundedBuffer &buff);
 int createSocketAndListen(const int port_num);
 void acceptConnections(const int server_sock); 
 
-/*
-int createSocketAndListen(const int port_num);
-void acceptConnections(const int server_sock);
-void handleClient(BoundedBuffer &buff);
-void sendData(int socked_fd, const char *data, size_t data_length);
-int receiveData(int socked_fd, char *dest, size_t buff_size);
-std::string dateToString(void);
-void sendFileNotFound (const int client_sock, std::string httpTypeResponse);
-//void sendOK (const int client_sock, int size, fs::path extension, std::vector<char> s);
-void sendBadRequest (const int client_sock);
-*/
 
 int main(int argc, char** argv) {
 
 	/* Make sure the user called our program correctly. */
 	if (argc != 3) {
-		// TODO: print a proper error message informing user of proper usage
 		cout << "INCORRECT USAGE!\n";
 		exit(1);
 	}
@@ -109,8 +97,6 @@ int main(int argc, char** argv) {
  * @param data_length Number of bytes of data to send.
  */
 void sendData(int socked_fd, const char *data, size_t data_length) {
-	// TODO: Wrap the following code in a loop so that it keeps sending until
-	// the data has been completely sent.
 	int num_bytes_remaining = data_length;
 	while(num_bytes_remaining > 0) 
 	{
@@ -119,7 +105,7 @@ void sendData(int socked_fd, const char *data, size_t data_length) {
 			std::error_code ec(errno, std::generic_category());
 			throw std::system_error(ec, "send failed");
 		}
-		num_bytes_remaining -= num_bytes_sent; //This line was missing
+		num_bytes_remaining -= num_bytes_sent; 
 	}
 }
 
@@ -142,6 +128,13 @@ int receiveData(int socked_fd, char *dest, size_t buff_size) {
 	return num_bytes_received;
 }
 
+/*
+ * Function that gets the current date and time to display when we send
+ * responses
+ *
+ * @this function does not take any parameters.
+ * @return date_string - returns the date as a string
+ */
 std::string dateToString (void)
 {
 	time_t currentTime = time(0);
@@ -307,7 +300,8 @@ void handleClient(BoundedBuffer &buff)
 		
 	
 	// Parse the client's request using a regular expression
-	std::regex regularExpression ("GET([ \t]+)/([a-zA-Z0-9_\\-\\/.]*)([ \t]+)HTTP/([0-9]+).([0-9]+)([^]*)(Host:)*([^]*)", std::regex_constants::ECMAScript);
+	std::regex regularExpression ("GET([ \t]+)/([a-zA-Z0-9_\\-\\/.]*)([ \t]+)HTTP/([0-9]+).([0-9]+)([^]*)(Host:)*([^]*)",
+	std::regex_constants::ECMAScript);
 	if (!regex_match(response_buffer, regularExpression)) 
 	{
 		// Request was bad, send 400 and return
