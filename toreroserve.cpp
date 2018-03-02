@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
 
 	/* Make sure the user called our program correctly. */
 	if (argc != 3) {
-		cout << "INCORRECT USAGE!\n";
+		perror("INCORRECT USAGE!\n");
 		exit(1);
 	}
 	/* Read the port number from the first command line argument. */
@@ -99,14 +99,17 @@ int main(int argc, char** argv) {
  */
 void sendData(int socked_fd, const char *data, size_t data_length) {
 	int num_bytes_remaining = data_length;
+	int start_position = data_length - num_bytes_remaining;
 	while(num_bytes_remaining > 0) 
 	{
-		int num_bytes_sent = send(socked_fd, data, data_length, 0);
+		//int num_bytes_sent = send(socked_fd, data, data_length, 0);
+		int num_bytes_sent = send(socked_fd, (data + start_position) , num_bytes_remaining, 0);
 		if (num_bytes_sent == -1) {
 			std::error_code ec(errno, std::generic_category());
 			throw std::system_error(ec, "send failed");
 		}
 		num_bytes_remaining -= num_bytes_sent; 
+		start_position = data_length - num_bytes_remaining;
 	}
 }
 
@@ -162,7 +165,6 @@ void sendFileNotFound (const int client_sock, std::string httpTypeResponse)
 	toReturn.append(dateToString());
 	toReturn.append("\r\n\r\n");
 	toReturn.append("<html><head><title>Page Not Found</title></head><body>404 Not Found</body></html>");
-	cout << "Message is\r\n\r\n" << toReturn << '\n';
 
 	// Copy to char array and send
 	char message [toReturn.length() + 1];
@@ -183,21 +185,19 @@ void sendBadRequest (const int client_sock)
 	// Insert Date 
 	toReturn.append(dateToString());
 	toReturn.append("\r\n");
-	cout << "Message is\r\n\r\n" << toReturn << '\n';
 
 	// Copy to char array and send
 	char message [toReturn.length() + 1];
 	strcpy(message, toReturn.c_str());
 	sendData(client_sock, message, sizeof(message)); 
+	
 }
 
 void sendOK (const int client_sock, int size, fs::path extension, std::vector<char> s, std::string content)
 {
-	cout<< "got here\r\n";
 	// Create 200 Return Message
 	std::string toReturn ("HTTP/1.1 200 OK\r\nDate: ");
 
-	cout << extension << "\r\n";
 	// Insert Date, Size, Filetype
 	toReturn.append(dateToString());
 	toReturn.append("\r\n");
@@ -211,9 +211,8 @@ void sendOK (const int client_sock, int size, fs::path extension, std::vector<ch
 	std::string extension_string(extension.string());
 	toReturn.append(extension_string.substr(1));
 	toReturn.append("\r\n\r\n");
-	cout << "here\r\n"; 
 	// DON'T TOUCH THIS I DONT KNOW HOW IT WORKS 
-	int  messageSize = toReturn.length()+ 2 + size;
+	int  messageSize = toReturn.length() + 2 + size;
 	if (size < 0)
 		messageSize = toReturn.length() + 2 + content.length();
 
@@ -231,7 +230,6 @@ void sendOK (const int client_sock, int size, fs::path extension, std::vector<ch
 		strcpy(contentMessage, content.c_str());
 		memcpy((finalMessage + toReturn.length()), contentMessage, content.length());
 		sendData(client_sock, finalMessage, messageSize);
-		cout << finalMessage << "\r\n";
 		return;
 	}
 
@@ -239,7 +237,6 @@ void sendOK (const int client_sock, int size, fs::path extension, std::vector<ch
 	std::copy(s.begin(), s.end(), entityBody);
 	memcpy((finalMessage + toReturn.length()), entityBody, s.size());
 	sendData(client_sock, finalMessage, messageSize); 	
-	cout << finalMessage << "\r\n";
 }
 
 std::string generateIndexHTML(fs::path directory)
@@ -298,7 +295,6 @@ void handleClient(BoundedBuffer &buff)
 	{
 		// This is run within a thread. Get the client socket info from buffer
 		int client_sock = buff.getItem();
-		cout << "Received an item from the buffer:" << client_sock << "\r\n";
 
 		// Receive data from client
 		char response_buffer[bufferSize];
@@ -306,7 +302,6 @@ void handleClient(BoundedBuffer &buff)
 		if (response <= 0)
 		{
 			close(client_sock);
-			cout << "socket finished with no data :" << client_sock << "\r\n";
 			return; 
 			//There was no data received
 		}
@@ -319,10 +314,8 @@ void handleClient(BoundedBuffer &buff)
 		if (!regex_match(response_buffer, regularExpression)) 
 		{
 			// Request was bad, send 400 and return
-			cout <<"i am here\n";
 			sendBadRequest(client_sock);
 			close(client_sock);
-			cout << "socket finished :" << client_sock << "\r\n";
 			return;
 		}
 
@@ -335,24 +328,19 @@ void handleClient(BoundedBuffer &buff)
 		std::string location_string(location);
 		std::string command_string(command);
 		std::string httpType_string(httpType); 
-		cout << "Command = <" << command_string << ">, Location = <"  << location_string << ">, HttpType = <" << httpType_string << ">\n";
 
 		char search_buffer [512]; 
 		std::string folder ("WWW");
 		folder = folder + location_string;
 		folder.copy(search_buffer, bufferSize);
-		cout << "Before send, send_buffer is :" << folder << "\n";
 		fs::path p(folder);
-		cout << p;
 
 		// Generate proper response from request path
 		if (fs::exists(p))
 		{
-			cout << p << " exists on server\n";
 			if (fs::is_directory(p))
 			{	
 				// The path is an existing directory
-				cout << p << " is directory\n";
 				if (containsIndex(p) == 1)
 				{
 					// The path contains index.html, send this file
@@ -360,26 +348,22 @@ void handleClient(BoundedBuffer &buff)
 					if (newPath[newPath.length()-1] != '/')
 						newPath.append("/");
 					newPath.append("index.html");
-					p = newPath;
-					cout << "changed path to:" << p.string() << "\r\n";
+					fs::path newPathPath (newPath);
+					p = newPathPath;
 				}
 				else
 				{
 					// The path doesn't contain index.html. Generate HTML of directory and send
 					std::string html;
 					html = generateIndexHTML(p);
-					cout << "abouttopass\r\n";
 					sendOK(client_sock, -1, ".html", std::vector<char>(), html);
 					close(client_sock);
-					cout << "socket finished generating html :" << client_sock << "\r\n";
 				}
 			}
 			if (fs::is_regular_file(p))
 			{
 				// The path is a file, send this file
-				cout << p << " is regularFile\n";
 				fs::path d(fs::extension(p));
-				cout << fs::file_size(p) <<"\n";
 
 				// Scan binary contents of file into vector
 				std::ifstream inFile;
@@ -390,7 +374,6 @@ void handleClient(BoundedBuffer &buff)
 				}
 				inFile.seekg(0, std::ios::end);			
 				std::streampos position = inFile.tellg();
-				cout << "length :" << position << "\r\n";
 				inFile.seekg(0, std::ios::beg);
 				std::vector<char> buffer((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
 				int passPosition = (int)position;
@@ -399,7 +382,6 @@ void handleClient(BoundedBuffer &buff)
 				// Append file to 200 OK Message and send
 				sendOK(client_sock, passPosition, fs::extension(p), buffer, std::string());
 				close(client_sock);
-				cout << "socket finished 200 ok:" << client_sock << "\r\n";
 			}	
 		}
 		else 
@@ -407,12 +389,10 @@ void handleClient(BoundedBuffer &buff)
 			// Not a file or directory, send 404 message
 			sendFileNotFound(client_sock, httpType_string);
 			close(client_sock);
-			cout << "socket finished 404:" << client_sock << "\r\n";
 		}
 		memset(temporary_buffer, 0, sizeof(temporary_buffer));
 		memset(search_buffer, 0, sizeof(search_buffer));
 		memset(response_buffer, 0, sizeof(response_buffer));
-		cout << "socket finished at end :" << client_sock << "\r\n";
 	}
 }
 
@@ -519,7 +499,6 @@ void acceptConnections(const int server_sock)
 		 */
 		struct sockaddr_in remote_addr;
 		unsigned int socklen = sizeof(remote_addr); 
-		//cout << "Start spinning\n";
 		/* 
 		 * Accept the first waiting connection from the server socket and
 		 * populate the address information.  The result (sock) is a socket
@@ -532,7 +511,6 @@ void acceptConnections(const int server_sock)
 			perror("Error accepting connection");
 			exit(1);
 		}
-		cout << "Putting this on the buffer: " << sock << "\r\n";
 		/* 
 		 * At this point, you have a connected socket (named sock) that you can
 		 * use to send() and recv(). The handleClient function should handle all
