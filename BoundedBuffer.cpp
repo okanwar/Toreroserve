@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <iostream>
 
 #include "BoundedBuffer.hpp"
 
@@ -22,8 +23,10 @@ int BoundedBuffer::getItem()
 	std::unique_lock<std::mutex> lk(m); // Create unique lock, auto locks
 	while (buffer.empty())
 	{
+		std::cout << "Waiting for data\r\n";
 		dataAvailable.wait(lk);	
 	}
+	std::cout << "found an item\r\n";
 	int item = buffer.front();
 	buffer.pop();
 	spaceAvailable.notify_one();
