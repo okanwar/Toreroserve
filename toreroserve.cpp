@@ -144,6 +144,12 @@ std::string dateToString (void)
 	return date_string;
 }
 
+/*
+ * A function to send a file not found html to the requester.
+ *
+ *@param client_sock - The client's sock file descriptor
+ *@param httpTypeResponse - MUST FINISH COMMENTING HERE
+ */
 void sendFileNotFound (const int client_sock, std::string httpTypeResponse)
 {
 	// Create 404 Return Message
@@ -163,6 +169,11 @@ void sendFileNotFound (const int client_sock, std::string httpTypeResponse)
 	sendData(client_sock, message, sizeof(message)); 
 }
 
+/*
+ * A function to send a 400 bad request message to the requester.
+ *
+ * @param client_sock - The client's sock file descripter
+ */
 void sendBadRequest (const int client_sock)
 {
 	// Create 400 Return Message
@@ -201,7 +212,6 @@ void sendOK (const int client_sock, int size, fs::path extension, std::vector<ch
 	toReturn.append("\r\n\r\n");
 	cout << "here\r\n"; 
 	// DON'T TOUCH THIS I DONT KNOW HOW IT WORKS 
-	//int  messageSize = toReturn.length()+ 2 + strlen(content);
 	int  messageSize = toReturn.length()+ 2 + size;
 	if (size < 0)
 		 messageSize = toReturn.length() + 2 + content.length();
@@ -227,7 +237,6 @@ void sendOK (const int client_sock, int size, fs::path extension, std::vector<ch
 	char entityBody[s.size() + 1];
 	std::copy(s.begin(), s.end(), entityBody);
 	memcpy((finalMessage + toReturn.length()), entityBody, s.size());
-	//memcpy((finalMessage + toReturn.length()), content, strlen(content));
 	sendData(client_sock, finalMessage, messageSize); 	
 	cout << finalMessage << "\r\n";
 }
@@ -293,7 +302,7 @@ void handleClient(BoundedBuffer &buff)
 	if (response <= 0)
 	{
 		close(client_sock);
-		return; //lol
+		return; 
 		//There was no data received
 	}
 	cout << response_buffer<< "\n";	
