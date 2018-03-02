@@ -152,7 +152,7 @@ std::string dateToString (void)
  * A function to send a file not found html to the requester.
  *
  *@param client_sock - The client's sock file descriptor
- *@param httpTypeResponse - MUST FINISH COMMENTING HERE
+ *@param httpTypeResponse - A string that contains the type of response that will be sent
  */
 void sendFileNotFound (const int client_sock, std::string httpTypeResponse)
 {
@@ -193,6 +193,15 @@ void sendBadRequest (const int client_sock)
 	
 }
 
+/*
+ * A function that sends a 200 OK message to the client.
+ *
+ * @param client_sock - The client's sock file descripter
+ * @param size - 
+ * @param path extention -
+ * @param s -
+ * @param string content - 
+ */
 void sendOK (const int client_sock, int size, fs::path extension, std::vector<char> s, std::string content)
 {
 	// Create 200 Return Message
@@ -239,6 +248,14 @@ void sendOK (const int client_sock, int size, fs::path extension, std::vector<ch
 	sendData(client_sock, finalMessage, messageSize); 	
 }
 
+/*
+ *
+ *
+ *
+ *@param path directory - 
+ *@return returnHTML - 
+ */
+
 std::string generateIndexHTML(fs::path directory)
 {
 	std::vector<fs::directory_entry> list; 
@@ -265,6 +282,13 @@ std::string generateIndexHTML(fs::path directory)
 
 	return returnHTML;
 }
+
+/*
+ *
+ *
+ * @param path directory - 
+ * @return 0 -
+ */
 
 int containsIndex(fs::path directory)
 {
@@ -391,9 +415,6 @@ void handleClient(BoundedBuffer &buff)
 			sendFileNotFound(client_sock, httpType_string);
 			close(client_sock);
 		}
-		//memset(temporary_buffer, 0, sizeof(temporary_buffer));
-		//memset(search_buffer, 0, sizeof(search_buffer));
-		//memset(response_buffer, 0, sizeof(response_buffer));
 	}
 }
 
@@ -516,11 +537,6 @@ void acceptConnections(const int server_sock)
 		 * At this point, you have a connected socket (named sock) that you can
 		 * use to send() and recv(). The handleClient function should handle all
 		 * of the sending and receiving to/from the client.
-		 *
-		 * TODO: You shouldn't call handleClient directly here. Instead it
-		 * should be called from a separate thread. You'll just need to put sock
-		 * in a shared buffer and notify the threads (via a condition variable)
-		 * that there is a new item on this buffer.
 		 */
 		buffer.putItem(sock);
 
