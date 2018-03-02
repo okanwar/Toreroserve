@@ -302,7 +302,7 @@ void handleClient(BoundedBuffer &buff)
 		if (response <= 0)
 		{
 			close(client_sock);
-			return; 
+			continue;
 			//There was no data received
 		}
 		cout << response_buffer<< "\n";	
@@ -316,7 +316,7 @@ void handleClient(BoundedBuffer &buff)
 			// Request was bad, send 400 and return
 			sendBadRequest(client_sock);
 			close(client_sock);
-			return;
+			continue;
 		}
 
 		// Request was good, tokenize to get information from request
@@ -358,6 +358,7 @@ void handleClient(BoundedBuffer &buff)
 					html = generateIndexHTML(p);
 					sendOK(client_sock, -1, ".html", std::vector<char>(), html);
 					close(client_sock);
+					continue;
 				}
 			}
 			if (fs::is_regular_file(p))
@@ -390,9 +391,9 @@ void handleClient(BoundedBuffer &buff)
 			sendFileNotFound(client_sock, httpType_string);
 			close(client_sock);
 		}
-		memset(temporary_buffer, 0, sizeof(temporary_buffer));
-		memset(search_buffer, 0, sizeof(search_buffer));
-		memset(response_buffer, 0, sizeof(response_buffer));
+		//memset(temporary_buffer, 0, sizeof(temporary_buffer));
+		//memset(search_buffer, 0, sizeof(search_buffer));
+		//memset(response_buffer, 0, sizeof(response_buffer));
 	}
 }
 
@@ -482,7 +483,7 @@ int createSocketAndListen(const int port_num) {
 void acceptConnections(const int server_sock) 
 {
 	BoundedBuffer buffer(BACKLOG);
-	for (size_t i = 0; i < BACKLOG; i++)
+	for (size_t i = 0; i < 1; i++)
 	{
 		std::thread clientThread (handleClient, std::ref(buffer));
 		clientThread.detach();
