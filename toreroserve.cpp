@@ -336,9 +336,6 @@ void handleClient(BoundedBuffer &buff, char * parent_directory)
 			continue;
 			//There was no data received
 		}
-		cout << response_buffer<< "\n";	
-
-
 		// Parse the client's request using a regular expression
 		std::regex regularExpression ("GET([ \t]+)/([a-zA-Z0-9_\\-\\/.]*)([ \t]+)HTTP/([0-9]+).([0-9]+)([^]*)(Host:)*([^]*)",
 				std::regex_constants::ECMAScript);
@@ -360,10 +357,8 @@ void handleClient(BoundedBuffer &buff, char * parent_directory)
 		std::string command_string(command);
 		std::string httpType_string(httpType); 
 
-		char search_buffer [512]; 
 		std::string folder (parent_directory);
 		folder = folder + location_string;
-		folder.copy(search_buffer, bufferSize);
 		fs::path p(folder);
 
 		// Generate proper response from request path
@@ -402,7 +397,8 @@ void handleClient(BoundedBuffer &buff, char * parent_directory)
 				inFile.open(p.string(), std::ios::binary|std::ios::in);
 				if (!inFile) 
 				{
-					cout << "Unable to open file\r\n";
+					close(client_sock);
+					continue;
 				}
 				inFile.seekg(0, std::ios::end);			
 				std::streampos position = inFile.tellg();
