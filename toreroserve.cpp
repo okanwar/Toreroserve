@@ -5,6 +5,10 @@
  * This program should take two arguments:
  * 	1. The port number on which to bind and listen for connections
  * 	2. The directory out of which to serve files.
+ *	
+ *	Description:
+ *	This program runs a lean web server that delivers pages from a directory
+ *	from a specified port number in the command line.
  *
  * Author 1: Om Kanwar okanwar@sandiego.edu
  * Author 2: Chris Jung christopherjung@sandiego.edu
@@ -60,9 +64,9 @@ void sendBadRequest (const int client_sock);
 void sendOK (const int client_sock, int size, fs::path extension, std::vector<char> s, std::string content);
 std::string generateIndexHTML(fs::path directory);
 int containsIndex(fs::path directory);
-void handleClient(BoundedBuffer &buff);
+void handleClient(BoundedBuffer &buff, char* parent_directory);
 int createSocketAndListen(const int port_num);
-void acceptConnections(const int server_sock); 
+void acceptConnections(const int server_sock, char* parent_directory); 
 
 
 int main(int argc, char** argv) {
@@ -80,9 +84,7 @@ int main(int argc, char** argv) {
 	int server_sock = createSocketAndListen(port);
 
 	/* Now let's start accepting connections. */
-	//char * something = argv[2];
-	//cout << something;
-	acceptConnections(server_sock);
+	acceptConnections(server_sock, argv[2]);
 
 	close(server_sock);
 
@@ -102,7 +104,6 @@ void sendData(int socked_fd, const char *data, size_t data_length) {
 	int start_position = data_length - num_bytes_remaining;
 	while(num_bytes_remaining > 0) 
 	{
-		//int num_bytes_sent = send(socked_fd, data, data_length, 0);
 		int num_bytes_sent = send(socked_fd, (data + start_position) , num_bytes_remaining, 0);
 		if (num_bytes_sent == -1) {
 			std::error_code ec(errno, std::generic_category());
@@ -194,13 +195,20 @@ void sendBadRequest (const int client_sock)
 }
 
 /*
- * A function that sends a 200 OK message to the client.
+ * A function that sends a 200 OK message to the client. This function has two
+ * different states:
+ * 1. Takes in a vector and a vector size and a blank string as the fifth
+ * parameter
+ * 2. Takes in a string with a blank vector and a size of -1.
  *
  * @param client_sock - The client's sock file descripter
- * @param size - 
- * @param path extention -
- * @param s -
- * @param string content - 
+ * @param size - Size of the vector being passed in.
+ * @param path extention - the file type being passed into the function, only
+ * applicable in the first state of the function, otherwise, it is assumed
+ * that the type is html.
+ * @param s - vector that contains the byte data of the file.
+ * @param string content - When a vector is not passed in, a blank string is
+ * used instead
  */
 void sendOK (const int client_sock, int size, fs::path extension, std::vector<char> s, std::string content)
 {
@@ -220,7 +228,6 @@ void sendOK (const int client_sock, int size, fs::path extension, std::vector<ch
 	std::string extension_string(extension.string());
 	toReturn.append(extension_string.substr(1));
 	toReturn.append("\r\n\r\n");
-	// DON'T TOUCH THIS I DONT KNOW HOW IT WORKS 
 	int  messageSize = toReturn.length() + 2 + size;
 	if (size < 0)
 		messageSize = toReturn.length() + 2 + content.length();
@@ -249,11 +256,10 @@ void sendOK (const int client_sock, int size, fs::path extension, std::vector<ch
 }
 
 /*
+ * Generates an html with links to the contents of the directory
  *
- *
- *
- *@param path directory - 
- *@return returnHTML - 
+ *@param path directory - the directory with the links
+ *@return returnHTML - a string with the html
  */
 
 std::string generateIndexHTML(fs::path directory)
@@ -271,12 +277,10 @@ std::string generateIndexHTML(fs::path directory)
 		std::size_t location = pathString.find("/");
 		std::string pathSub(pathString.substr(location)); 
 		nextLink.append(pathSub);
-		//		nextLink.append(pathString);
 		nextLink.append("/\">");
 		nextLink.append(pathSub);
 		nextLink.append("/</a><br>");
 		returnHTML.append(nextLink);
-		//cout << d << "\r\n";
 	}
 	returnHTML.append("</body></html>");
 
@@ -284,10 +288,13 @@ std::string generateIndexHTML(fs::path directory)
 }
 
 /*
+ * A function that returns whether or not an index.html exists in the
+ * directory. 
  *
- *
- * @param path directory - 
- * @return 0 -
+ * @param path directory - the directory that will or will not contain an
+ * index.html
+ * @return 0 - if there is no index.html in the directory.
+ * @return 1 - if there is an index.html in the directory.
  */
 
 int containsIndex(fs::path directory)
@@ -313,8 +320,9 @@ int containsIndex(fs::path directory)
  *
  * @param client_sock The client's socket file descriptor.
  */
-void handleClient(BoundedBuffer &buff) 
-{	
+void handleClient(BoundedBuffer &buff, char * parent_directory) 
+{
+cout<< parent_directory;	
 	while (true) // We have this so the thread does not finish and die off
 	{
 		// This is run within a thread. Get the client socket info from buffer
@@ -501,12 +509,12 @@ int createSocketAndListen(const int port_num) {
  *
  * @param server_sock The socket used by the server.
  */
-void acceptConnections(const int server_sock) 
+void acceptConnections(const int server_sock, char *parent_directory) 
 {
-	BoundedBuffer buffer(BACKLOG);
-	for (size_t i = 0; i < 1; i++)
+	BoundedBuffer buffer(bufferSize);
+	for (size_t i = 0; i < BACKLOG; i++)
 	{
-		std::thread clientThread (handleClient, std::ref(buffer));
+		std::thread clientThread(handleClient, std::ref(buffer), std::ref(parent_directory));
 		clientThread.detach();
 	}
 	while (true) 
