@@ -322,7 +322,6 @@ int containsIndex(fs::path directory)
  */
 void handleClient(BoundedBuffer &buff, char * parent_directory) 
 {
-cout<< parent_directory;	
 	while (true) // We have this so the thread does not finish and die off
 	{
 		// This is run within a thread. Get the client socket info from buffer
@@ -362,7 +361,7 @@ cout<< parent_directory;
 		std::string httpType_string(httpType); 
 
 		char search_buffer [512]; 
-		std::string folder ("WWW");
+		std::string folder (parent_directory);
 		folder = folder + location_string;
 		folder.copy(search_buffer, bufferSize);
 		fs::path p(folder);
